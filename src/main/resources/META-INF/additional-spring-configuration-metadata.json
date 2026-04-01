@@ -1,0 +1,19 @@
+{
+    "properties": [
+        {
+            "name": "api.title",
+            "type": "java.lang.String",
+            "description": "The title of the OpenAPI specification."
+        },
+        {
+            "name": "api.version",
+            "type": "java.lang.String",
+            "description": "The version of the API shown in the OpenAPI spec."
+        },
+        {
+            "name": "api.description",
+            "type": "java.lang.String",
+            "description": "The description shown in the OpenAPI spec."
+        }
+    ]
+}

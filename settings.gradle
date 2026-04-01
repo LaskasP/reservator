@@ -1,1 +1,3 @@
 rootProject.name = 'reservator'
+
+include 'load-tests'
