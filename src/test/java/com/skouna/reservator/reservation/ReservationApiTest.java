@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -26,11 +27,21 @@ class ReservationApiTest {
 
     String vendorId;
     String courtId;
-    String tomorrow;
+    LocalDate reservationDate;
+    String reservationDateText;
+    LocalTime firstSlotStart;
+    LocalTime firstSlotEnd;
+    LocalTime secondSlotStart;
+    LocalTime secondSlotEnd;
 
     @BeforeEach
     void setUp() throws Exception {
-        tomorrow = LocalDate.now().plusDays(1).toString();
+        reservationDate = LocalDate.now().plusDays(1);
+        reservationDateText = reservationDate.toString();
+        firstSlotStart = openingTimeFor(reservationDate);
+        firstSlotEnd = firstSlotStart.plusHours(1);
+        secondSlotStart = firstSlotEnd;
+        secondSlotEnd = secondSlotStart.plusHours(1);
 
         var vendorResult = mockMvc.perform(post("/api/vendors")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -74,8 +85,8 @@ class ReservationApiTest {
         mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "alice", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                                """.formatted(tomorrow)))
+                                { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.status").value("HELD"))
@@ -89,8 +100,8 @@ class ReservationApiTest {
         var holdResult = mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "alice", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                                """.formatted(tomorrow)))
+                                { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)))
                 .andReturn();
         var reservationId = JsonPath.read(holdResult.getResponse().getContentAsString(), "$.id").toString();
 
@@ -140,8 +151,8 @@ class ReservationApiTest {
                         strictVendorId, strictCourtId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "bob", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                                """.formatted(tomorrow)))
+                                { "username": "bob", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)))
                 .andReturn();
         var resId = JsonPath.read(holdResult.getResponse().getContentAsString(), "$.id").toString();
 
@@ -196,8 +207,8 @@ class ReservationApiTest {
         var holdResult = mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", sv, sc)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "charlie", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                                """.formatted(tomorrow)))
+                                { "username": "charlie", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)))
                 .andReturn();
         var rid = JsonPath.read(holdResult.getResponse().getContentAsString(), "$.id").toString();
 
@@ -214,8 +225,8 @@ class ReservationApiTest {
         var holdResult = mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "alice", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                                """.formatted(tomorrow)))
+                                { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)))
                 .andReturn();
         var resId = JsonPath.read(holdResult.getResponse().getContentAsString(), "$.id").toString();
 
@@ -231,14 +242,14 @@ class ReservationApiTest {
         mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        { "username": "alice", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                        """.formatted(tomorrow)));
+                        { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                        """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)));
 
         mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "bob", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                                """.formatted(tomorrow)))
+                                { "username": "bob", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Slot is already booked"));
     }
@@ -249,29 +260,43 @@ class ReservationApiTest {
         mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "alice", "date": "%s", "startTime": "09:30", "endTime": "10:30" }
-                                """.formatted(tomorrow)))
+                                { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart.plusMinutes(30), secondSlotStart.plusMinutes(30))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Start time must align with the slot grid"));
     }
 
     @Test
+    @DisplayName("GIVEN a requested slot before opening hours WHEN a user holds it THEN it returns 400 outside operating hours")
+    void holdBeforeOpeningReturnsOutsideOperatingHours() throws Exception {
+        mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart.minusHours(1), firstSlotEnd.minusHours(1))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Reservation is outside operating hours"))
+                .andExpect(jsonPath("$.errorCode").value("OUTSIDE_OPERATING_HOURS"));
+    }
+
+    @Test
     @DisplayName("GIVEN one slot is held WHEN checking availability THEN the held slot is BOOKED and others are FREE")
     void availabilityShowsFreeSlots() throws Exception {
-        // Hold one slot
         mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        { "username": "alice", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                        """.formatted(tomorrow)));
+                        { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                        """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)));
 
         mockMvc.perform(get("/api/vendors/{vendorId}/courts/{courtId}/availability", vendorId, courtId)
-                        .param("date", tomorrow))
+                        .param("date", reservationDateText))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.date").value(tomorrow))
+                .andExpect(jsonPath("$.date").value(reservationDateText))
                 .andExpect(jsonPath("$.slots").isArray())
-                .andExpect(jsonPath("$.slots[?(@.startTime=='09:00:00')].status").value("BOOKED"))
-                .andExpect(jsonPath("$.slots[?(@.startTime=='08:00:00')].status").value("FREE"));
+                .andExpect(jsonPath("$.slots[?(@.startTime=='%s')].status"
+                        .formatted(apiTime(firstSlotStart))).value("BOOKED"))
+                .andExpect(jsonPath("$.slots[?(@.startTime=='%s')].status"
+                        .formatted(apiTime(secondSlotStart))).value("FREE"));
     }
 
     @Test
@@ -280,11 +305,11 @@ class ReservationApiTest {
         mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "alice", "date": "%s", "startTime": "09:00", "endTime": "11:00" }
-                                """.formatted(tomorrow)))
+                                { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, firstSlotStart, secondSlotEnd)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.startTime").value("09:00:00"))
-                .andExpect(jsonPath("$.endTime").value("11:00:00"));
+                .andExpect(jsonPath("$.startTime").value(apiTime(firstSlotStart)))
+                .andExpect(jsonPath("$.endTime").value(apiTime(secondSlotEnd)));
     }
 
     @Test
@@ -293,15 +318,26 @@ class ReservationApiTest {
         mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        { "username": "alice", "date": "%s", "startTime": "09:00", "endTime": "10:00" }
-                        """.formatted(tomorrow)));
+                        { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                        """.formatted(reservationDateText, firstSlotStart, firstSlotEnd)));
 
         mockMvc.perform(post("/api/vendors/{vendorId}/courts/{courtId}/hold", vendorId, courtId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "username": "alice", "date": "%s", "startTime": "11:00", "endTime": "12:00" }
-                                """.formatted(tomorrow)))
+                                { "username": "alice", "date": "%s", "startTime": "%s", "endTime": "%s" }
+                                """.formatted(reservationDateText, secondSlotStart, secondSlotEnd)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("User already has an active hold for this vendor"));
+    }
+
+    private static LocalTime openingTimeFor(LocalDate date) {
+        return switch (date.getDayOfWeek()) {
+            case SATURDAY, SUNDAY -> LocalTime.of(10, 0);
+            default -> LocalTime.of(8, 0);
+        };
+    }
+
+    private static String apiTime(LocalTime time) {
+        return time + ":00";
     }
 }

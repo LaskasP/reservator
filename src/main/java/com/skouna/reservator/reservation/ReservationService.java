@@ -31,8 +31,8 @@ class ReservationService {
         var vendor = court.getVendor();
 
         validateNotInPast(request.date(), request.startTime());
-        validateSlotAlignment(court, request.date(), request.startTime(), request.endTime());
         validateWithinOperatingHours(court, request.date(), request.startTime(), request.endTime());
+        validateSlotAlignment(court, request.date(), request.startTime(), request.endTime());
         validateNoOverlap(courtId, request.date(), request.startTime(), request.endTime());
         validateOneHoldPerUserPerVendor(request.username(), vendorId);
 
