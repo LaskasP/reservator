@@ -1,14 +1,9 @@
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'postgres:17-alpine'
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - '5432'
-  redis:
-    image: 'redis:latest'
-    command: redis-server --notify-keyspace-events Ex
-    ports:
-      - '6379'
+      - '5432:5432'

@@ -44,6 +44,20 @@
 - Register every public API error code in `docs/api/errors.md` before using it.
 - Update the relevant domain document and ADR when a decision changes.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs use GitHub Issues in `LaskasP/reservator`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository. Read `CONTEXT.md`, `docs/glossary.md`, relevant `docs/domain/` documents, and `docs/adr/`. See `docs/agents/domain.md`.
+
 ## Git
 - Never commit. The user will commit manually.
 
